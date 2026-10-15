@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>证券交易系统-登录</title>
+    <!-- 引入Bootstrap（Python前端常用的CSS框架，非Java） -->
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card mx-auto" style="max-width: 400px;">
+            <div class="card-header text-center">
+                <h3>证券交易系统</h3>
+            </div>
+            <div class="card-body">
+                <!-- 错误提示 -->
+                <div id="errorMsg" class="text-danger text-center mb-3"></div>
+
+                <!-- 用户名输入框 -->
+                <div class="mb-3">
+                    <label>用户名</label>
+                    <input type="text" class="form-control" id="username" placeholder="请输入用户名">
+                </div>
+
+                <!-- 密码输入框（恢复） -->
+                <div class="mb-3">
+                    <label>密码</label>
+                    <input type="password" class="form-control" id="password" placeholder="请输入密码">
+                </div>
+
+                <!-- 验证码区域 -->
+                <div class="mb-3">
+                    <label>验证码</label>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control" id="captcha" placeholder="请输入验证码">
+                        <div class="btn btn-secondary" id="captchaDisplay" onclick="refreshCaptcha()">加载中...</div>
+                    </div>
+                </div>
+
+                <!-- 登录按钮（恢复） -->
+                <button class="btn btn-primary w-100" onclick="login()">登录</button>
+
+                <!-- 注册链接（恢复） -->
+                <div class="text-center mt-3">
+                    <a href="/register">还没有账号？立即注册</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Python Flask前端配套的JS（无Java代码） -->
+    <script>
+        // 页面加载时刷新验证码
+        window.onload = refreshCaptcha;
+
+        // 刷新验证码（调用Python后端的/get_captcha接口）
+        async function refreshCaptcha() {
+            try {
+                const res = await fetch("/get_captcha");
+                const resData = await res.json();
+                document.getElementById("captchaDisplay").innerText = resData.captcha;
+            } catch (error) {
+                document.getElementById("captchaDisplay").innerText = "加载失败，点击重试";
+                console.error("验证码接口请求失败（Python后端）：", error);
+            }
+        }
+
+        // 登录逻辑（调用Python后端的/login接口）
+        async function login() {
+            // 获取输入值（Python前端JS语法）
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const captcha = document.getElementById("captcha").value;
+
+            // 空值校验
+            if (!username || !password || !captcha) {
+                document.getElementById("errorMsg").innerText = "请填写完整信息";
+                return;
+            }
+
+            // 调用Python Flask后端接口
+            try {
+                const res = await fetch("/login", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        captcha: captcha
+                    })
+                });
+                const resData = await res.json();
+                if (resData.status === "success") {
+                    window.location.href = "/"; // 跳转到Python后端的首页
+                } else {
+                    document.getElementById("errorMsg").innerText = resData.msg;
+                    refreshCaptcha(); // 验证失败刷新验证码
+                }
+            } catch (error) {
+                document.getElementById("errorMsg").innerText = "网络错误（Python后端未响应）";
+                console.error("登录接口请求失败：", error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>证券交易系统-行情</title>
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+        <span class="navbar-brand">证券交易系统</span>
+        <div class="text-white">
+            账户余额：¥{{ user.balance }}
+            <a href="/profile" class="text-white ms-3">个人中心</a>
+            <a href="/logout" class="text-white ms-3">退出登录</a>
+        </div>
+    </div>
+</nav>
+
+    <div class="container mt-4">
+        <!-- 持仓 -->
+        <div class="card mb-4">
+            <div class="card-header">我的持仓</div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>股票代码</th><th>名称</th><th>成本价</th><th>数量</th><th>操作</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for h in user.holdings %}
+                        <tr>
+                            <td>{{ h.code }}</td>
+                            <td>{{ h.name }}</td>
+                            <td>{{ h.price }}</td>
+                            <td>{{ h.quantity }}</td>
+                            <td><button class="btn btn-danger btn-sm" onclick="trade('sell', '{{ h.code }}')">卖出</button></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">暂无持仓</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 行情 -->
+        <div class="card">
+            <div class="card-header">市场行情</div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>股票代码</th><th>名称</th><th>当前价</th><th>操作</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for code, s in stocks.items() %}
+                        <tr>
+                            <td>{{ code }}</td>
+                            <td>{{ s.name }}</td>
+                            <td>{{ s.price }}</td>
+                            <td><button class="btn btn-success btn-sm" onclick="trade('buy', '{{ code }}')">买入</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易弹窗 -->
+    <div class="modal fade" id="tradeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tradeTitle">买入股票</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="tradeType">
+                    <input type="hidden" id="tradeCode">
+                    <div class="mb-3">
+                        <label>交易数量（100的倍数）</label>
+                        <input type="number" class="form-control" id="tradeQuantity" min="100" step="100" value="100">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary" onclick="confirmTrade()">确认交易</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script>
+        const tradeModal = new bootstrap.Modal(document.getElementById('tradeModal'));
+
+        // 打开交易弹窗
+        function trade(type, code) {
+            document.getElementById("tradeType").value = type;
+            document.getElementById("tradeCode").value = code;
+            document.getElementById("tradeTitle").innerText = type === "buy" ? "买入股票" : "卖出股票";
+            tradeModal.show();
+        }
+
+        // 确认交易
+        async function confirmTrade() {
+            const data = {
+                type: document.getElementById("tradeType").value,
+                code: document.getElementById("tradeCode").value,
+                quantity: document.getElementById("tradeQuantity").value
+            };
+            const res = await fetch("/trade", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(data)
+            });
+            const resData = await res.json();
+            if (resData.status === "success") {
+                alert("交易成功");
+                window.location.reload();
+            } else {
+                alert(resData.msg);
+            }
+            tradeModal.hide();
+        }
+    </script>
+</body>
+</html>

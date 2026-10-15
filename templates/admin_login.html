@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员登录 - 股票交易系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #dc3545; color: white; border: none; cursor: pointer; }
+        .error { color: red; margin: 10px 0; }
+        .success { color: green; margin: 10px 0; }
+        .back-link { margin-top: 20px; display: block; text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>管理员登录</h2>
+    <div id="msg" class="error"></div>
+    <form id="adminLoginForm">
+        <div class="form-group">
+            <label>管理员账号</label>
+            <input type="text" id="username" required value="admin">
+        </div>
+        <div class="form-group">
+            <label>管理员密码</label>
+            <input type="password" id="password" required placeholder="首次启动时在控制台显示的密码">
+        </div>
+        <button type="submit">登录</button>
+    </form>
+    <a href="/" class="back-link">返回用户端</a>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const msg = document.getElementById('msg');
+
+            if (!username || !password) {
+                msg.textContent = '请填写完整信息';
+                return;
+            }
+
+            fetch('/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    msg.className = 'success';
+                    msg.textContent = data.msg;
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard';
+                    }, 1000);
+                } else {
+                    msg.className = 'error';
+                    msg.textContent = data.msg;
+                }
+            })
+            .catch(err => {
+                msg.textContent = '网络错误，请重试';
+                console.error(err);
+            });
+        });
+    </script>
+</body>
+</html>

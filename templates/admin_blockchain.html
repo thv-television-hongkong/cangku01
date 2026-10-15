@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>区块链数据 - 股票交易系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+        .header { margin-bottom: 30px; }
+        .block { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; border-left: 5px solid #007bff; }
+        .block-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .block-info { margin: 10px 0; }
+        .block-label { font-weight: bold; display: inline-block; width: 120px; }
+        .transaction { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0; }
+        .tx-item { margin: 5px 0; }
+        .back-links { margin-top: 20px; }
+        .back-links a { display: inline-block; margin-right: 10px; padding: 8px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; }
+        .back-links a:hover { background: #5a6268; }
+        .valid { color: green; font-weight: bold; }
+        .invalid { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>区块链数据 (共 {{ chain_data|length }} 个区块)</h1>
+        <div>
+            <div class="{% if is_valid %}valid{% else %}invalid{% endif %}">
+                区块链状态：{% if is_valid %}有效（未被篡改）{% else %}无效（已被篡改）{% endif %}
+            </div>
+            <div class="back-links">
+                <a href="/admin/dashboard">返回控制面板</a>
+                <a href="/admin/users">查看用户数据</a>
+            </div>
+        </div>
+    </div>
+
+    {% for block in chain_data %}
+    <div class="block">
+        <div class="block-header">
+            <span>区块 #{{ block.index }} {% if block.index == 0 %}(创世区块){% endif %}</span>
+            <span>{{ block.timestamp }}</span>
+        </div>
+        <div class="block-info"><span class="block-label">区块哈希：</span>{{ block.hash }}</div>
+        <div class="block-info"><span class="block-label">前一哈希：</span>{{ block.previous_hash }}</div>
+        <div class="block-info"><span class="block-label">交易数量：</span>{{ block.transaction_count }}</div>
+
+        {% if block.transactions %}
+        <div style="margin-top: 15px;">
+            <strong>交易详情：</strong>
+            {% for tx in block.transactions %}
+            <div class="transaction">
+                <div class="tx-item"><strong>交易ID：</strong>{{ tx.trade_id }}</div>
+                <div class="tx-item"><strong>用户：</strong>{{ tx.username }}</div>
+                <div class="tx-item"><strong>股票：</strong>{{ tx.stock_code }} {{ tx.stock_name }}</div>
+                <div class="tx-item"><strong>类型：</strong>{{ tx.trade_type }}</div>
+                <div class="tx-item"><strong>价格：</strong>¥{{ "%.2f"|format(tx.price) }}</div>
+                <div class="tx-item"><strong>数量：</strong>{{ tx.quantity }}</div>
+                <div class="tx-item"><strong>金额：</strong>¥{{ "%.2f"|format(tx.amount) }}</div>
+                <div class="tx-item"><strong>交易后余额：</strong>¥{{ "%.2f"|format(tx.balance_after) }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>

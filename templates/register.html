@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户注册</title>
+    <style>
+        .container { width: 400px; margin: 100px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .form-item { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; margin-top: 10px; display: none; }
+        .success { color: green; margin-top: 10px; display: none; }
+        .login-link { margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>用户注册</h2>
+        <form id="registerForm">
+            <div class="form-item">
+                <label for="username">用户名：</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名">
+            </div>
+            <div class="form-item">
+                <label for="password">密码：</label>
+                <input type="password" id="password" name="password" placeholder="字母+数字，至少6位">
+            </div>
+            <div class="form-item">
+                <label for="confirm_pwd">确认密码：</label>
+                <input type="password" id="confirm_pwd" name="confirm_pwd" placeholder="再次输入密码">
+            </div>
+            <button type="submit">注册</button>
+            <div class="error" id="errorMsg"></div>
+            <div class="success" id="successMsg"></div>
+            <div class="login-link">
+                已有账号？<a href="/login">立即登录</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("registerForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            // 清空提示
+            document.getElementById("errorMsg").style.display = "none";
+            document.getElementById("successMsg").style.display = "none";
+
+            // 获取表单数据
+            const data = {
+                username: document.getElementById("username").value.trim(),
+                password: document.getElementById("password").value.trim(),
+                confirm_pwd: document.getElementById("confirm_pwd").value.trim()
+            };
+
+            try {
+                // 前端预校验
+                if (!data.username) throw new Error("用户名不能为空");
+                if (!data.password || !data.confirm_pwd) throw new Error("密码不能为空");
+                if (data.password !== data.confirm_pwd) throw new Error("两次密码不一致");
+
+                // 提交后端
+                const res = await fetch("/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.status === "success") {
+                    // 注册成功提示 + 跳转登录页
+                    document.getElementById("successMsg").textContent = result.msg;
+                    document.getElementById("successMsg").style.display = "block";
+                    this.reset();
+                    // 延迟1秒跳转（让用户看到成功提示）
+                    setTimeout(() => {
+                        window.location.href = result.redirect || "/login";
+                    }, 1000);
+                } else {
+                    throw new Error(result.msg);
+                }
+            } catch (err) {
+                document.getElementById("errorMsg").textContent = err.message;
+                document.getElementById("errorMsg").style.display = "block";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>证券交易系统-个人中心</title>
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <style>
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .red { color: #dc3545; }
+        .green { color: #198754; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <span class="navbar-brand">证券交易系统</span>
+            <div class="text-white">
+                欢迎：{{ user.username|default('用户') }}
+                <a href="/logout" class="text-white ms-3">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- 左侧导航 -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-pills flex-column" id="profileTab">
+                            <li class="nav-item mb-2">
+                                <a class="nav-link active" data-target="info">个人信息</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" data-target="market">行情中心</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" data-target="fund">资金明细</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" data-target="pwd">修改密码</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" data-target="trade">最近交易</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧内容 -->
+            <div class="col-md-9">
+                <!-- 1. 个人信息 -->
+                <div class="content-section active" id="info">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>个人信息</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="infoForm">
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">用户名</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" value="{{ session.username }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">真实姓名</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="real_name" value="{{ user.real_name }}">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">身份证号</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="id_card" value="{{ user.id_card }}">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">手机号码</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="phone" value="{{ user.phone }}">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-9 offset-sm-3">
+                                        <button type="button" class="btn btn-primary" onclick="updateInfo()">保存信息</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 行情中心 -->
+                <div class="content-section" id="market">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>行情中心</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>股票代码</th>
+                                        <th>股票名称</th>
+                                        <th>当前价格</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for code, stock in stocks.items() %}
+                                    <tr>
+                                        <td>{{ code }}</td>
+                                        <td>{{ stock.name }}</td>
+                                        <td>¥{{ stock.price }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success" onclick="window.location.href='/'">交易</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 资金明细 -->
+                <div class="content-section" id="fund">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>资金明细</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>交易ID</th>
+                                        <th>交易类型</th>
+                                        <th>金额</th>
+                                        <th>账户余额</th>
+                                        <th>交易时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in user.fund_records|reverse %}
+                                    <tr>
+                                        <td>{{ record.id }}</td>
+                                        <td>{{ record.type }}</td>
+                                        <td class="{{ 'green' if record.amount > 0 else 'red' }}">
+                                            {{ '+' if record.amount > 0 else '' }}{{ record.amount }}
+                                        </td>
+                                        <td>¥{{ record.balance }}</td>
+                                        <td>{{ record.time }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">暂无资金记录</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 修改密码 -->
+                <div class="content-section" id="pwd">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>修改密码</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="pwdForm">
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">旧密码</label>
+                                    <div class="col-sm-9">
+                                        <input type="password" class="form-control" id="old_pwd" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">新密码</label>
+                                    <div class="col-sm-9">
+                                        <input type="password" class="form-control" id="new_pwd" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">确认新密码</label>
+                                    <div class="col-sm-9">
+                                        <input type="password" class="form-control" id="confirm_pwd" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-9 offset-sm-3">
+                                        <button type="button" class="btn btn-primary" onclick="changePwd()">确认修改</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. 最近交易 -->
+                <div class="content-section" id="trade">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>最近交易</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>交易ID</th>
+                                        <th>交易类型</th>
+                                        <th>股票代码/名称</th>
+                                        <th>价格</th>
+                                        <th>数量</th>
+                                        <th>金额</th>
+                                        <th>交易时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in user.trade_records|reverse %}
+                                    <tr>
+                                        <td>{{ record.id }}</td>
+                                        <td>{{ record.type }}</td>
+                                        <td>{{ record.code }}/{{ record.name }}</td>
+                                        <td>¥{{ record.price }}</td>
+                                        <td>{{ record.quantity }}</td>
+                                        <td>¥{{ record.amount }}</td>
+                                        <td>{{ record.time }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">暂无交易记录</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script>
+        // 标签切换逻辑
+        document.querySelectorAll('#profileTab .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                // 移除所有激活状态
+                document.querySelectorAll('#profileTab .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                // 添加当前激活状态
+                this.classList.add('active');
+                const target = this.getAttribute('data-target');
+                document.getElementById(target).classList.add('active');
+            });
+        });
+
+        // 更新个人信息
+        async function updateInfo() {
+            const data = {
+                real_name: document.getElementById('real_name').value,
+                id_card: document.getElementById('id_card').value,
+                phone: document.getElementById('phone').value
+            };
+            const res = await fetch('/update_info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const resData = await res.json();
+            alert(resData.msg);
+        }
+
+        // 修改密码
+        async function changePwd() {
+            const oldPwd = document.getElementById('old_pwd').value;
+            const newPwd = document.getElementById('new_pwd').value;
+            const confirmPwd = document.getElementById('confirm_pwd').value;
+
+            if (newPwd !== confirmPwd) {
+                alert('两次输入的密码不一致！');
+                return;
+            }
+
+            const res = await fetch('/change_pwd', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    old_pwd: oldPwd,
+                    new_pwd: newPwd
+                })
+            });
+            const resData = await res.json();
+            alert(resData.msg);
+            if (resData.status === 'success') {
+                document.getElementById('pwdForm').reset();
+            }
+        }
+    </script>
+</body>
+</html>

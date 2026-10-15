@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理 - 股票交易系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f8f9fa;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            color: #333;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .user-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .user-stats {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .user-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .user-list-header {
+            display: grid;
+            grid-template-columns: 1fr 150px 120px 120px 100px 100px;
+            background: #007bff;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+        }
+
+        .user-item {
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-summary {
+            display: grid;
+            grid-template-columns: 1fr 150px 120px 120px 100px 100px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .user-summary:hover {
+            background: #f8f9fa;
+        }
+
+        .user-summary.active {
+            background: #e9f5ff;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .user-details {
+            padding: 20px;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+            display: none;
+        }
+
+        .user-details.active {
+            display: block;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+
+        .detail-card h4 {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-item {
+            margin: 8px 0;
+        }
+
+        .info-label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .total-asset {
+            font-size: 16px;
+            font-weight: bold;
+            color: #dc3545;
+            margin-top: 10px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>用户管理系统</h1>
+        <div>
+            <a href="/admin/dashboard" class="btn btn-secondary">返回控制面板</a>
+            <button class="btn btn-danger" onclick="location.href='/admin/logout'">退出登录</button>
+        </div>
+    </div>
+
+    <div class="user-container">
+        <!-- 统计信息 -->
+        <div class="user-stats">
+            <div class="stat-item">
+                <div class="stat-label">总用户数</div>
+                <div class="stat-value">{{ users|length }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">系统总资产</div>
+                <div class="stat-value">¥{{ "%.2f"|format(users|sum(attribute='total_asset')) }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">总交易笔数</div>
+                <div class="stat-value">{{ users|sum(attribute='trade_count') }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">平均用户资产</div>
+                <div class="stat-value">
+                    {% if users %}
+                    ¥{{ "%.2f"|format((users|sum(attribute='total_asset')) / users|length) }}
+                    {% else %}
+                    ¥0.00
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-bar">
+            <input type="text" class="search-input" id="userSearch" placeholder="搜索用户名、手机号、身份证号...">
+            <button class="btn btn-primary" onclick="searchUsers()">搜索</button>
+            <button class="btn btn-secondary" onclick="resetSearch()">重置</button>
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="user-list">
+            <div class="user-list-header">
+                <div>用户名</div>
+                <div>注册时间</div>
+                <div>账户余额</div>
+                <div>总资产</div>
+                <div>交易笔数</div>
+                <div>操作</div>
+            </div>
+
+            {% if users %}
+                {% for user in users %}
+                <div class="user-item" id="user-{{ user.username }}">
+                    <!-- 用户摘要信息 -->
+                    <div class="user-summary {% if user.is_selected %}active{% endif %}" onclick="toggleDetails('{{ user.username }}')">
+                        <div>{{ user.username }}</div>
+                        <div>{{ user.data.register_time }}</div>
+                        <div>¥{{ "%.2f"|format(user.data.balance) }}</div>
+                        <div>¥{{ "%.2f"|format(user.total_asset) }}</div>
+                        <div>{{ user.trade_count }}</div>
+                        <div>
+                            <button class="expand-btn" id="btn-{{ user.username }}">
+                                {% if user.is_selected %}▼{% else %}▶{% endif %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 用户详细信息 -->
+                    <div class="user-details {% if user.is_selected %}active{% endif %}" id="details-{{ user.username }}">
+                        <div class="details-grid">
+                            <!-- 基本信息 -->
+                            <div class="detail-card">
+                                <h4>基本信息</h4>
+                                <div class="info-item">
+                                    <span class="info-label">用户名：</span>{{ user.username }}
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">真实姓名：</span>{{ user.data.real_name or "未填写" }}
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">身份证号：</span>{{ user.data.id_card or "未填写" }}
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">手机号：</span>{{ user.data.phone or "未填写" }}
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">注册时间：</span>{{ user.data.register_time }}
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">账户余额：</span>¥{{ "%.2f"|format(user.data.balance) }}
+                                </div>
+                                <div class="total-asset">
+                                    总资产：¥{{ "%.2f"|format(user.total_asset) }}
+                                </div>
+                            </div>
+
+                            <!-- 持仓信息 -->
+                            <div class="detail-card">
+                                <h4>持仓信息</h4>
+                                {% if user.data.holdings %}
+                                <table>
+                                    <tr>
+                                        <th>股票代码</th>
+                                        <th>股票名称</th>
+                                        <th>持仓成本</th>
+                                        <th>当前价格</th>
+                                        <th>数量</th>
+                                        <th>价值</th>
+                                    </tr>
+                                    {% for holding in user.data.holdings %}
+                                    <tr>
+                                        <td>{{ holding.code }}</td>
+                                        <td>{{ holding.name }}</td>
+                                        <td>¥{{ "%.2f"|format(holding.price) }}</td>
+                                        <td>¥{{ "%.2f"|format(stocks[holding.code].price) }}</td>
+                                        <td>{{ holding.quantity }}</td>
+                                        <td>¥{{ "%.2f"|format(stocks[holding.code].price * holding.quantity) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                                {% else %}
+                                <div class="no-data">暂无持仓</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 交易记录 -->
+                        <div class="detail-card">
+                            <h4>交易记录 (共 {{ user.data.trade_records|length }} 笔)</h4>
+                            {% if user.data.trade_records %}
+                            <table>
+                                <tr>
+                                    <th>交易ID</th>
+                                    <th>类型</th>
+                                    <th>股票代码</th>
+                                    <th>价格</th>
+                                    <th>数量</th>
+                                    <th>金额</th>
+                                    <th>时间</th>
+                                </tr>
+                                {% for record in user.data.trade_records|reverse %}
+                                <tr>
+                                    <td>{{ record.id }}</td>
+                                    <td>{{ record.type }}</td>
+                                    <td>{{ record.code }}</td>
+                                    <td>¥{{ "%.2f"|format(record.price) }}</td>
+                                    <td>{{ record.quantity }}</td>
+                                    <td>¥{{ "%.2f"|format(record.amount) }}</td>
+                                    <td>{{ record.time }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                            {% else %}
+                            <div class="no-data">暂无交易记录</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 资金明细 -->
+                        <div class="detail-card">
+                            <h4>资金明细 (共 {{ user.data.fund_records|length }} 条)</h4>
+                            {% if user.data.fund_records %}
+                            <table>
+                                <tr>
+                                    <th>交易ID</th>
+                                    <th>类型</th>
+                                    <th>金额</th>
+                                    <th>交易后余额</th>
+                                    <th>时间</th>
+                                </tr>
+                                {% for record in user.data.fund_records|reverse %}
+                                <tr>
+                                    <td>{{ record.id }}</td>
+                                    <td>{{ record.type }}</td>
+                                    <td>¥{{ "%.2f"|format(record.amount) }}</td>
+                                    <td>¥{{ "%.2f"|format(record.balance) }}</td>
+                                    <td>{{ record.time }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                            {% else %}
+                            <div class="no-data">暂无资金明细</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="no-data">暂无用户数据</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // 展开/折叠用户详情
+        function toggleDetails(username) {
+            const details = document.getElementById(`details-${username}`);
+            const summary = document.querySelector(`#user-${username} .user-summary`);
+            const btn = document.getElementById(`btn-${username}`);
+
+            if (details.classList.contains('active')) {
+                details.classList.remove('active');
+                summary.classList.remove('active');
+                btn.textContent = '▶';
+            } else {
+                // 先关闭所有其他详情
+                document.querySelectorAll('.user-details.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+                document.querySelectorAll('.user-summary.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+                document.querySelectorAll('.expand-btn').forEach(el => {
+                    el.textContent = '▶';
+                });
+
+                // 展开当前详情
+                details.classList.add('active');
+                summary.classList.add('active');
+                btn.textContent = '▼';
+            }
+        }
+
+        // 搜索用户
+        function searchUsers() {
+            const searchText = document.getElementById('userSearch').value.toLowerCase().trim();
+            if (!searchText) {
+                resetSearch();
+                return;
+            }
+
+            // 遍历所有用户项
+            document.querySelectorAll('.user-item').forEach(item => {
+                const username = item.id.replace('user-', '');
+                const userData = item.textContent.toLowerCase();
+
+                if (userData.includes(searchText)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // 重置搜索
+        function resetSearch() {
+            document.getElementById('userSearch').value = '';
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.style.display = 'block';
+            });
+        }
+
+        // 页面加载时，如果有选中的用户则展开
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if users|selectattr('is_selected')|list %}
+                const selectedUser = "{{ users|selectattr('is_selected')|first|attr('username') }}";
+                toggleDetails(selectedUser);
+            {% endif %}
+
+            // 绑定回车搜索
+            document.getElementById('userSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchUsers();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
